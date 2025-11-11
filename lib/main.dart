@@ -8,11 +8,11 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
         // Add your own Firebase project configuration from google-services.json
-        apiKey: 'AIzaSyCgBGRWFyT7kHONSw4JVCuP8m7_JLe_t7c', // api_key
+        apiKey: 'AIzaSyARQomvP-ekwFCs2kaI-YlIlGqMtLZI3ic', // api_key
         appId:
-            '1:1076267444851:android:8d8993ff954cfc79f41806', // mobilesdk_app_id
-        messagingSenderId: '1076267444851', // project_number
-        projectId: 'attendence-app-d18d1', // project_id
+            '1:751508408499:android:28e3766e70b2f983f7c8c6', // mobilesdk_app_id
+        messagingSenderId: '751508408499', // project_number
+        projectId: 'idn1-fc3fc', // project_id
       ),
     );
     // Firebase connection success
