@@ -3,7 +3,6 @@ import 'package:attendance_app/ui/absent/absent_screen.dart';
 import 'package:attendance_app/ui/attend/attend_screen.dart';
 import 'package:attendance_app/ui/attendance_histroy/attendance_history_screen.dart';
 
-
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -48,6 +47,23 @@ class HomeScreen extends StatelessWidget {
                         ),
                       );
                     },
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image(
+                          image: AssetImage('assets/images/ic_absen.png'),
+                          height: 100,
+                          width: 100,
+                        ),
+                        Text(
+                          "Attendance Record",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -62,6 +78,23 @@ class HomeScreen extends StatelessWidget {
                         ),
                       );
                     },
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image(
+                          image: AssetImage('assets/images/ic_leave.png'),
+                          height: 100,
+                          width: 100,
+                        ),
+                        Text(
+                          "Attendance Record",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -76,6 +109,23 @@ class HomeScreen extends StatelessWidget {
                         ),
                       );
                     },
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image(
+                          image: AssetImage('assets/images/ic_history.png'),
+                          height: 100,
+                          width: 100,
+                        ),
+                        Text(
+                          "Attendance Record",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
