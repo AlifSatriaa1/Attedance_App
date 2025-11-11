@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "751508408499",
+    "project_id": "idn1-fc3fc",
+    "storage_bucket": "idn1-fc3fc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:751508408499:android:28e3766e70b2f983f7c8c6",
+        "android_client_info": {
+          "package_name": "com.alip.attedanceapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARQomvP-ekwFCs2kaI-YlIlGqMtLZI3ic"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
