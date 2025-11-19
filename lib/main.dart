@@ -1,41 +1,66 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:attendance_app/ui/home_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:attendance_app/ui/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Set system UI overlay style
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
+  );
+  
   try {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
-        // Add your own Firebase project configuration from google-services.json
-        apiKey: 'AIzaSyARQomvP-ekwFCs2kaI-YlIlGqMtLZI3ic', // api_key
-        appId:
-            '1:751508408499:android:28e3766e70b2f983f7c8c6', // mobilesdk_app_id
-        messagingSenderId: '751508408499', // project_number
-        projectId: 'idn1-fc3fc', // project_id
+        apiKey: 'AIzaSyARQomvP-ekwFCs2kaI-YlIlGqMtLZI3ic',
+        appId: '1:751508408499:android:28e3766e70b2f983f7c8c6',
+        messagingSenderId: '751508408499',
+        projectId: 'idn1-fc3fc',
       ),
     );
-    // Firebase connection success
-    print("Firebase Terhubung ke:");
-    print("API Key: ${Firebase.app().options.apiKey}");
+    print("Firebase Connected Successfully");
     print("Project ID: ${Firebase.app().options.projectId}");
   } catch (e) {
-    // Firebase connection failed
-    print("Firebase gagal terhubung: $e");
+    print("Firebase connection failed: $e");
   }
-  // runApp(const HomeScreen());
-  runApp(const TestApp());
+  runApp(const PresenceApp());
 }
 
-class TestApp extends StatelessWidget {
-  // Main App
-  const TestApp({super.key}); // Constructor of TestApp clas
+class PresenceApp extends StatelessWidget {
+  const PresenceApp({super.key});
 
-  @override // can give information about about your missing override code
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // remove debug banner
-      home: const HomeScreen(), // HomeScreen class
+      debugShowCheckedModeBanner: false,
+      title: 'Presence',
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        useMaterial3: true,
+        fontFamily: 'Roboto',
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1A008F),
+          brightness: Brightness.light,
+        ),
+        cardTheme: CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Color(0xFF1A008F),
+          foregroundColor: Colors.white,
+        ),
+      ),
+      home: const SplashScreen(),
     );
   }
 }
