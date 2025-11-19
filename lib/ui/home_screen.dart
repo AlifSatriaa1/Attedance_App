@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:attendance_app/ui/absent/absent_screen.dart';
 import 'package:attendance_app/ui/attend/attend_screen.dart';
 import 'package:attendance_app/ui/attendance_histroy/attendance_history_screen.dart';
+import 'package:attendance_app/ui/statistics/statistics_screen.dart';
+import 'package:attendance_app/ui/leaderboard/leaderboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -298,15 +300,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
       },
       {
-        'title': 'Reports',
+        'title': 'Statistics',
         'subtitle': 'Analytics',
         'icon': Icons.bar_chart_rounded,
         'color': const Color(0xFF9C27B0),
-        'onTap': () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Coming soon!')),
-          );
-        },
+        'onTap': () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const StatisticsScreen(),
+              ),
+            ),
       },
     ];
 
@@ -445,24 +448,68 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               children: [
                 _buildProfileOption(
+                  icon: Icons.emoji_events,
+                  title: 'Leaderboard',
+                  subtitle: 'View rankings',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LeaderboardScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildProfileOption(
+                  icon: Icons.bar_chart,
+                  title: 'Statistics',
+                  subtitle: 'View analytics',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const StatisticsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildProfileOption(
                   icon: Icons.settings,
                   title: 'Settings',
-                  onTap: () {},
+                  subtitle: 'App preferences',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Coming soon!')),
+                    );
+                  },
                 ),
                 _buildProfileOption(
                   icon: Icons.notifications,
                   title: 'Notifications',
-                  onTap: () {},
+                  subtitle: 'Manage alerts',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Coming soon!')),
+                    );
+                  },
                 ),
                 _buildProfileOption(
                   icon: Icons.help,
                   title: 'Help & Support',
-                  onTap: () {},
+                  subtitle: 'Get assistance',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Coming soon!')),
+                    );
+                  },
                 ),
                 _buildProfileOption(
                   icon: Icons.info,
                   title: 'About',
-                  onTap: () {},
+                  subtitle: 'App information',
+                  onTap: () {
+                    _showAboutDialog(context);
+                  },
                 ),
               ],
             ),
@@ -475,15 +522,97 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildProfileOption({
     required IconData icon,
     required String title,
+    String? subtitle,
     required VoidCallback onTap,
   }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ListTile(
-        leading: Icon(icon, color: const Color(0xFF1A008F)),
-        title: Text(title),
-        trailing: const Icon(Icons.chevron_right),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A008F).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: const Color(0xFF1A008F)),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              )
+            : null,
+        trailing: const Icon(Icons.chevron_right, color: Color(0xFF1A008F)),
         onTap: onTap,
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Color(0xFF1A008F)),
+            SizedBox(width: 12),
+            Text("About"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Smart Attendance System",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Version 2.0.0",
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "A modern attendance tracking application with face detection and geolocation features.",
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "© 2025 All rights reserved",
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+        ],
       ),
     );
   }
