@@ -6,6 +6,8 @@ import 'package:attendance_app/ui/attend/attend_screen.dart';
 import 'package:attendance_app/ui/attendance_histroy/attendance_history_screen.dart';
 import 'package:attendance_app/ui/statistics/statistics_screen.dart';
 import 'package:attendance_app/ui/leaderboard/leaderboard_screen.dart';
+import 'package:attendance_app/ui/qr_checkin/qr_checkin_screen.dart';
+import 'package:attendance_app/ui/achievements/achievements_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -300,6 +302,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
       },
       {
+        'title': 'QR Check-In',
+        'subtitle': 'Quick scan',
+        'icon': Icons.qr_code_scanner,
+        'color': const Color(0xFF2196F3),
+        'onTap': () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const QRCheckInScreen(),
+              ),
+            ),
+      },
+      {
         'title': 'Statistics',
         'subtitle': 'Analytics',
         'icon': Icons.bar_chart_rounded,
@@ -447,6 +461,19 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
+                _buildProfileOption(
+                  icon: Icons.workspace_premium,
+                  title: 'Achievements',
+                  subtitle: 'Unlock badges',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AchievementsScreen(),
+                      ),
+                    );
+                  },
+                ),
                 _buildProfileOption(
                   icon: Icons.emoji_events,
                   title: 'Leaderboard',
