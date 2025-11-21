@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:attendance_app/ui/home_screen.dart';
 import 'package:attendance_app/widgets/success_dialog.dart';
+import 'package:attendance_app/utils/custom_snackbar.dart';
+import 'package:attendance_app/widgets/gradient_button.dart';
 
 class AbsentScreen extends StatefulWidget {
   const AbsentScreen({super.key});
@@ -13,6 +15,7 @@ class AbsentScreen extends StatefulWidget {
 
 class _AbsentScreenState extends State<AbsentScreen> {
   int currentStep = 0;
+  late PageController pageController;
   
   final controllerName = TextEditingController();
   final controllerReason = TextEditingController();
@@ -25,6 +28,22 @@ class _AbsentScreenState extends State<AbsentScreen> {
   
   final CollectionReference dataCollection =
       FirebaseFirestore.instance.collection('attendance');
+
+  @override
+  void initState() {
+    super.initState();
+    pageController = PageController(initialPage: 0);
+  }
+
+  @override
+  void dispose() {
+    pageController.dispose();
+    controllerName.dispose();
+    controllerReason.dispose();
+    fromController.dispose();
+    toController.dispose();
+    super.dispose();
+  }
 
   final List<Map<String, dynamic>> categories = [
     {
@@ -101,12 +120,12 @@ class _AbsentScreenState extends State<AbsentScreen> {
           Expanded(
             child: PageView(
               physics: const NeverScrollableScrollPhysics(),
+              controller: pageController,
               onPageChanged: (index) {
                 setState(() {
                   currentStep = index;
                 });
               },
-              controller: PageController(initialPage: currentStep),
               children: [
                 _buildStep1(),
                 _buildStep2(),
@@ -137,6 +156,11 @@ class _AbsentScreenState extends State<AbsentScreen> {
                         setState(() {
                           currentStep--;
                         });
+                        pageController.animateToPage(
+                          currentStep - 1,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
                       },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -158,24 +182,11 @@ class _AbsentScreenState extends State<AbsentScreen> {
                 if (currentStep > 0) const SizedBox(width: 12),
                 Expanded(
                   flex: currentStep == 0 ? 1 : 2,
-                  child: ElevatedButton(
+                  child: GradientButton(
+                    text: currentStep == 2 ? "Submit Request" : "Next",
+                    icon: currentStep == 2 ? Icons.send : Icons.arrow_forward,
                     onPressed: _handleNext,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: const Color(0xFF1A008F),
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      currentStep == 2 ? "Submit Request" : "Next",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    height: 56,
                   ),
                 ),
               ],
@@ -761,40 +772,18 @@ class _AbsentScreenState extends State<AbsentScreen> {
           }
         } else {
           if (fromDate == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.white),
-                    SizedBox(width: 12),
-                    Text("Please select start date first"),
-                  ],
-                ),
-                backgroundColor: Colors.orange[700],
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+            CustomSnackbar.show(
+              context,
+              message: "Please select start date first",
+              type: SnackbarType.warning,
             );
             return;
           }
           if (picked.isBefore(fromDate!)) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Row(
-                  children: [
-                    Icon(Icons.error_outline, color: Colors.white),
-                    SizedBox(width: 12),
-                    Text("End date cannot be before start date"),
-                  ],
-                ),
-                backgroundColor: Colors.red[700],
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+            CustomSnackbar.show(
+              context,
+              message: "End date cannot be before start date",
+              type: SnackbarType.error,
             );
             return;
           }
@@ -809,69 +798,46 @@ class _AbsentScreenState extends State<AbsentScreen> {
     if (currentStep == 0) {
       // Validate Step 1
       if (controllerName.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.white),
-                SizedBox(width: 12),
-                Text("Please enter your name"),
-              ],
-            ),
-            backgroundColor: Colors.orange[700],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        CustomSnackbar.show(
+          context,
+          message: "Please enter your name",
+          type: SnackbarType.warning,
         );
         return;
       }
       setState(() {
         currentStep = 1;
       });
+      pageController.animateToPage(
+        1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else if (currentStep == 1) {
       // Validate Step 2
       if (selectedCategory.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.white),
-                SizedBox(width: 12),
-                Text("Please select a reason"),
-              ],
-            ),
-            backgroundColor: Colors.orange[700],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        CustomSnackbar.show(
+          context,
+          message: "Please select a reason",
+          type: SnackbarType.warning,
         );
         return;
       }
       setState(() {
         currentStep = 2;
       });
+      pageController.animateToPage(
+        2,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else if (currentStep == 2) {
       // Validate Step 3 and Submit
       if (fromDate == null || toDate == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.white),
-                SizedBox(width: 12),
-                Text("Please select both dates"),
-              ],
-            ),
-            backgroundColor: Colors.orange[700],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        CustomSnackbar.show(
+          context,
+          message: "Please select both dates",
+          type: SnackbarType.warning,
         );
         return;
       }
@@ -944,21 +910,10 @@ class _AbsentScreenState extends State<AbsentScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop(); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text("Error: $e")),
-              ],
-            ),
-            backgroundColor: Colors.red[700],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        CustomSnackbar.show(
+          context,
+          message: "Error: $e",
+          type: SnackbarType.error,
         );
       }
     }

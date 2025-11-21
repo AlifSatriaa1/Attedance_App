@@ -4,9 +4,10 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
-import 'package:lottie/lottie.dart'; // Function to display animation
+import 'package:lottie/lottie.dart';
 import 'package:attendance_app/ui/attend/attend_screen.dart';
-import 'package:attendance_app/utils/face detection/google_ml_kit.dart'; // Function to detect face using Google ML Kit
+import 'package:attendance_app/utils/face detection/google_ml_kit.dart';
+import 'package:attendance_app/utils/custom_snackbar.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -18,7 +19,7 @@ class CameraScreen extends StatefulWidget {
 class _State extends State<CameraScreen> with TickerProviderStateMixin {
   //set face detection
   FaceDetector faceDetector = GoogleMlKit.vision.faceDetector(
-    FaceDetectorOptions(
+    FaceDetectorOptions(  
       enableContours: true,
       enableClassification: true,
       enableTracking: true,
@@ -31,10 +32,23 @@ class _State extends State<CameraScreen> with TickerProviderStateMixin {
   XFile? image;
   bool isBusy = false;
 
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
-    loadCamera();
     super.initState();
+    loadCamera();
+    
+    // Initialize fade animation
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+    _fadeController.forward();
   }
 
   //set open front camera device
@@ -60,53 +74,79 @@ class _State extends State<CameraScreen> with TickerProviderStateMixin {
         debugPrint('Error initializing camera: $e');
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.camera_enhance_outlined, color: Colors.white),
-              SizedBox(width: 10),
-              Text(
-                "Ups, camera not found!",
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.blueGrey,
-          shape: StadiumBorder(),
-          behavior: SnackBarBehavior.floating,
-        ),
+      CustomSnackbar.show(
+        context,
+        message: "Ups, camera not found!",
+        type: SnackbarType.error,
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    controller?.dispose();
+    faceDetector.close();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
 
-    //set loading
+    //set loading with better animation
     showLoaderDialog(BuildContext context) {
-      AlertDialog alert = AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A008F)),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Detecting face...",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-      );
       showDialog(
         barrierDismissible: false,
+        barrierColor: Colors.black87,
         context: context,
         builder: (BuildContext context) {
-          return alert;
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 1000),
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: value,
+                        child: const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A008F)),
+                          strokeWidth: 3,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    "Detecting face...",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A008F),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Please wait",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         },
       );
     }
@@ -115,39 +155,65 @@ class _State extends State<CameraScreen> with TickerProviderStateMixin {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Camera Preview
-          SizedBox(
-            height: size.height,
-            width: size.width,
-            child: controller == null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.camera_alt_outlined,
-                          color: Colors.white54,
-                          size: 64,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          "Camera not available",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+          // Camera Preview with fade animation
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: SizedBox(
+              height: size.height,
+              width: size.width,
+              child: controller == null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 600),
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: const Icon(
+                                  Icons.camera_alt_outlined,
+                                  color: Colors.white54,
+                                  size: 64,
+                                ),
+                              );
+                            },
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : !controller!.value.isInitialized
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                        ),
-                      )
-                    : CameraPreview(controller!),
+                          const SizedBox(height: 16),
+                          const Text(
+                            "Camera not available",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : !controller!.value.isInitialized
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 3,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Initializing camera...",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : CameraPreview(controller!),
+            ),
           ),
 
           // Top Gradient Overlay
@@ -275,9 +341,19 @@ class _State extends State<CameraScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 32),
 
-                  // Capture Button
-                  GestureDetector(
-                    onTap: () async {
+                  // Capture Button with scale animation
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.8, end: 1.0),
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.elasticOut,
+                    builder: (context, scale, child) {
+                      return Transform.scale(
+                        scale: scale,
+                        child: child,
+                      );
+                    },
+                    child: GestureDetector(
+                      onTap: () async {
                       final hasPermission = await handleLocationPermission();
                       try {
                         if (controller != null && controller!.value.isInitialized) {
@@ -285,57 +361,32 @@ class _State extends State<CameraScreen> with TickerProviderStateMixin {
                           image = await controller!.takePicture();
                           
                           if (hasPermission) {
-                            showLoaderDialog(context);
-                            final inputImage = InputImage.fromFilePath(image!.path);
-                            Platform.isAndroid
-                                ? processImage(inputImage)
-                                : Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => AttendScreen(image: image),
-                                    ),
-                                  );
+                            if (Platform.isAndroid) {
+                              showLoaderDialog(context);
+                              final inputImage = InputImage.fromFilePath(image!.path);
+                              processImage(inputImage);
+                            } else {
+                              // For iOS, return image directly
+                              Navigator.of(context).pop(image);
+                            }
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Row(
-                                  children: [
-                                    Icon(Icons.location_off, color: Colors.white),
-                                    SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text("Please enable location permission"),
-                                    ),
-                                  ],
-                                ),
-                                backgroundColor: Colors.red[400],
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                            CustomSnackbar.show(
+                              context,
+                              message: "Please enable location permission",
+                              type: SnackbarType.warning,
                             );
                           }
                         }
                       } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                const Icon(Icons.error_outline, color: Colors.white),
-                                const SizedBox(width: 12),
-                                Expanded(child: Text("Error: $e")),
-                              ],
-                            ),
-                            backgroundColor: Colors.red[400],
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                        CustomSnackbar.show(
+                          context,
+                          message: "Error: $e",
+                          type: SnackbarType.error,
                         );
                       }
-                    },
-                    child: Container(
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                       width: 72,
                       height: 72,
                       decoration: BoxDecoration(
@@ -363,6 +414,7 @@ class _State extends State<CameraScreen> with TickerProviderStateMixin {
                           size: 32,
                         ),
                       ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -387,73 +439,37 @@ class _State extends State<CameraScreen> with TickerProviderStateMixin {
   Future<bool> handleLocationPermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.location_off, color: Colors.white),
-              SizedBox(width: 10),
-              Text(
-                "Location services are disabled. Please enable the services.",
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.blueGrey,
-          shape: StadiumBorder(),
-          behavior: SnackBarBehavior.floating,
-        ),
+      CustomSnackbar.show(
+        context,
+        message: "Location services are disabled. Please enable the services.",
+        type: SnackbarType.warning,
       );
       return false;
     }
 
     bool isLocationEnabled = await Geolocator.isLocationServiceEnabled();
     if (!isLocationEnabled) {
-      print("Layanan lokasi tidak aktif, silakan aktifkan GPS.");
+      debugPrint("Layanan lokasi tidak aktif, silakan aktifkan GPS.");
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.location_off, color: Colors.white),
-                SizedBox(width: 10),
-                Text(
-                  "Location permission denied.",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.blueGrey,
-            shape: StadiumBorder(),
-            behavior: SnackBarBehavior.floating,
-          ),
+        CustomSnackbar.show(
+          context,
+          message: "Location permission denied.",
+          type: SnackbarType.error,
         );
         return false;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.location_off, color: Colors.white),
-              SizedBox(width: 10),
-              Text(
-                "Location permission denied forever, we cannot access.",
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.blueGrey,
-          shape: StadiumBorder(),
-          behavior: SnackBarBehavior.floating,
-        ),
+      CustomSnackbar.show(
+        context,
+        message: "Location permission denied forever, we cannot access.",
+        type: SnackbarType.error,
       );
       return false;
     }
@@ -468,38 +484,18 @@ class _State extends State<CameraScreen> with TickerProviderStateMixin {
     isBusy = false;
 
     if (mounted) {
-      setState(() {
-        Navigator.of(context).pop(true);
-        if (faces.isNotEmpty) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => AttendScreen(image: image)),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(
-                    Icons.face_retouching_natural_outlined,
-                    color: Colors.white,
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Ups, make sure that you're face is clearly visible!",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.blueGrey,
-              shape: StadiumBorder(),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      });
+      Navigator.of(context).pop(); // Close loading dialog
+      
+      if (faces.isNotEmpty) {
+        // Return image to previous screen
+        Navigator.of(context).pop(image);
+      } else {
+        CustomSnackbar.show(
+          context,
+          message: "Ups, make sure that your face is clearly visible!",
+          type: SnackbarType.warning,
+        );
+      }
     }
   }
 }

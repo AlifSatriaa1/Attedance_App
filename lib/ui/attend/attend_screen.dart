@@ -9,6 +9,8 @@ import 'package:intl/intl.dart'; // Used for formatting dates, numbers, and loca
 import 'package:attendance_app/ui/attend/camera_screen.dart';
 import 'package:attendance_app/ui/home_screen.dart';
 import 'package:attendance_app/widgets/success_dialog.dart';
+import 'package:attendance_app/utils/custom_snackbar.dart';
+import 'package:attendance_app/widgets/gradient_button.dart';
 
 class AttendScreen extends StatefulWidget {
   final XFile? image;
@@ -37,15 +39,22 @@ class _AttendScreenState extends State<AttendScreen> {
 
   @override
   void initState() {
-    handleLocationPermission();
+    super.initState();
     setDateTime();
     setStatusAbsen();
+    
+    // Check permission after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      handleLocationPermission();
+    });
 
     if (image != null) {
       isLoading = true;
-      getGeoLocationPosition();
+      // Get location after build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        getGeoLocationPosition();
+      });
     }
-    super.initState();
   }
 
   @override
@@ -410,53 +419,74 @@ class _AttendScreenState extends State<AttendScreen> {
 
   //get realtime location
   Future<void> getGeoLocationPosition() async {
-    // ignore: deprecated_member_use
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.low,
-    );
-    setState(() {
-      isLoading = false;
-      getAddressFromLongLat(position);
-    });
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      );
+      
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        await getAddressFromLongLat(position);
+      }
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          strAlamat = "Unable to get location";
+        });
+        CustomSnackbar.show(
+          context,
+          message: "Failed to get location: $e",
+          type: SnackbarType.error,
+        );
+      }
+    }
   }
 
   //get address by lat long
   Future<void> getAddressFromLongLat(Position position) async {
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-      position.latitude,
-      position.longitude,
-    );
-    print(placemarks);
-    Placemark place = placemarks[0];
-    setState(() {
-      dLat = double.parse('${position.latitude}');
-      dLat = double.parse('${position.longitude}');
-      strAlamat =
-          "${place.street}, ${place.subLocality}, ${place.locality}, ${place.postalCode}, ${place.country}";
-    });
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      debugPrint('Placemarks: $placemarks');
+      
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        setState(() {
+          dLat = position.latitude;
+          dLong = position.longitude;
+          strAlamat = "${place.street ?? ''}, ${place.subLocality ?? ''}, ${place.locality ?? ''}, ${place.postalCode ?? ''}, ${place.country ?? ''}";
+        });
+      }
+    } catch (e) {
+      debugPrint('Error getting address: $e');
+      setState(() {
+        dLat = position.latitude;
+        dLong = position.longitude;
+        strAlamat = "Location: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}";
+      });
+    }
   }
 
   //permission location
   Future<bool> handleLocationPermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.location_off, color: Colors.white),
-              SizedBox(width: 10),
-              Text(
-                "Location services are disabled. Please enable the services.",
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.blueGrey,
-          shape: StadiumBorder(),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (mounted) {
+        CustomSnackbar.show(
+          context,
+          message: "Location services are disabled. Please enable GPS.",
+          type: SnackbarType.warning,
+        );
+      }
       return false;
     }
 
@@ -464,45 +494,25 @@ class _AttendScreenState extends State<AttendScreen> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.location_off, color: Colors.white),
-                SizedBox(width: 10),
-                Text(
-                  "Location permission denied.",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.blueGrey,
-            shape: StadiumBorder(),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (mounted) {
+          CustomSnackbar.show(
+            context,
+            message: "Location permission denied.",
+            type: SnackbarType.error,
+          );
+        }
         return false;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.location_off, color: Colors.white),
-              SizedBox(width: 10),
-              Text(
-                "Location permission denied forever, we cannot access.",
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.blueGrey,
-          shape: StadiumBorder(),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (mounted) {
+        CustomSnackbar.show(
+          context,
+          message: "Location permission denied forever. Please enable in settings.",
+          type: SnackbarType.error,
+        );
+      }
       return false;
     }
     return true;
@@ -564,55 +574,51 @@ class _AttendScreenState extends State<AttendScreen> {
 
   //submit data absent to firebase
   Future<void> submitAbsen(String alamat, String nama, String status) async {
+    if (!mounted) return;
+    
     showLoaderDialog(context);
-    dataCollection
-        .add({
-          'address': alamat,
-          'name': nama,
-          'description': status,
-          'datetime': strDateTime,
-        })
-        .then((result) {
-          Navigator.of(context).pop();
-          
-          // Show success dialog
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => SuccessDialog(
-              title: "Success!",
-              message: "Your attendance has been recorded successfully",
-              onDismiss: () {
-                Navigator.of(context).pop();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
-                );
-              },
-            ),
-          );
-        })
-        .catchError((error) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.white),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Ups, $error",
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.blueGrey,
-              shape: const StadiumBorder(),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          Navigator.of(context).pop();
-        });
+    
+    try {
+      await dataCollection.add({
+        'address': alamat,
+        'name': nama,
+        'description': status,
+        'datetime': strDateTime,
+        'latitude': dLat,
+        'longitude': dLong,
+        'created_at': FieldValue.serverTimestamp(),
+      });
+      
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+        
+        // Show success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => SuccessDialog(
+            title: "Success!",
+            message: "Your attendance has been recorded successfully",
+            onDismiss: () {
+              Navigator.of(context).pop();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
+            },
+          ),
+        );
+      }
+    } catch (error) {
+      debugPrint('Error submitting attendance: $error');
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+        CustomSnackbar.show(
+          context,
+          message: "Failed to submit: $error",
+          type: SnackbarType.error,
+        );
+      }
+    }
   }
 }
